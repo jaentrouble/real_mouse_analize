@@ -130,3 +130,4 @@ dmypy.json
 
 # record files
 records/
+.vscode/

@@ -41,13 +41,13 @@ for vid_name in tqdm(vid_names, desc='videos'):
                         total=len(red_start_idx),
                         leave=False, desc=f'saving {vid_name}'):
         pre_writer = cv2.VideoWriter(
-            str(vid_dir/f'pre_{month}_{day}_{vid_idx}.mp4'),
+            str(vid_dir/f'pre_{month}_{day}_{hour}_{minute}_{vid_idx}.mp4'),
             fourcc,
             10,
             (frames[0].shape[1], frames[0].shape[0])
         )
         inter_writer = cv2.VideoWriter(
-            str(vid_dir/f'inter_{month}_{day}_{vid_idx}.mp4'),
+            str(vid_dir/f'inter_{month}_{day}_{hour}_{minute}_{vid_idx}.mp4'),
             fourcc,
             10,
             (frames[0].shape[1], frames[0].shape[0])
