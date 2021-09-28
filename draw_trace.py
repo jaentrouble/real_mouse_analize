@@ -11,6 +11,7 @@ MARKER = np.array([0,255,255])
 LINE_OVER = [0,255,255]
 LINE_WHITE = [0,0,170]
 LINE_THICK = 1
+BATCH_SIZE = 500
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-v','--video', dest='video', required=True)
@@ -54,6 +55,8 @@ def gaussian_heatmap_batch(rr, cc, shape, sigma=10):
 
 
 for vid_name in tqdm(vid_names, desc='videos'):
+    if not (vid_name.split('.')[-1] in ('mkv','mp4','ts')):
+        continue
     name = vid_name.split('.')[0]
     vid_path = str(vid_dir/vid_name)
     cap = cv2.VideoCapture(vid_path)
@@ -75,24 +78,24 @@ for vid_name in tqdm(vid_names, desc='videos'):
         rr, cc = np.nonzero(mask)
         pos_rr.append(np.mean(rr).astype(np.int))
         pos_cc.append(np.mean(cc).astype(np.int))
-    # frame_map = frames[-1].copy()
+    frame_map = frames[-1].copy()
     # white_map = np.ones_like(frame_map) * 255
-    # for i in trange(len(pos_rr)-1, leave=False, 
-    #                 desc=f'drawing lines {vid_name}'):
-    #     frame_map = cv2.line(
-    #         frame_map,
-    #         (pos_cc[i],pos_rr[i]),
-    #         (pos_cc[i+1],pos_rr[i+1]),
-    #         LINE_OVER,
-    #         thickness=LINE_THICK
-    #     )
-    #     white_map = cv2.line(
-    #         white_map,
-    #         (pos_cc[i],pos_rr[i]),
-    #         (pos_cc[i+1],pos_rr[i+1]),
-    #         LINE_WHITE,
-    #         thickness=LINE_THICK
-    #     )
+    for i in trange(len(pos_rr)-1, leave=False, 
+                    desc=f'drawing lines {vid_name}'):
+        frame_map = cv2.line(
+            frame_map,
+            (pos_cc[i],pos_rr[i]),
+            (pos_cc[i+1],pos_rr[i+1]),
+            LINE_OVER,
+            thickness=LINE_THICK
+        )
+        # white_map = cv2.line(
+        #     white_map,
+        #     (pos_cc[i],pos_rr[i]),
+        #     (pos_cc[i+1],pos_rr[i+1]),
+        #     LINE_WHITE,
+        #     thickness=LINE_THICK
+        # )
     # dist = 0
     # bef_r = pos_rr[0]
     # bef_c = pos_cc[0]
@@ -103,14 +106,20 @@ for vid_name in tqdm(vid_names, desc='videos'):
     #     bef_r = r
     #     bef_c = c
     # distances.append((vid_name, dist))
-    heatmaps = gaussian_heatmap_batch(pos_rr, pos_cc, frames[-1].shape[0:2])
-    print(heatmaps.shape)
-    heatmap_final = np.sum(heatmaps, axis=0)
+    heatmap_final = np.zeros(frames[-1].shape[:2])
+    for i in trange(len(frames)//BATCH_SIZE+1, leave=False):
+        heatmaps = gaussian_heatmap_batch(
+            pos_rr[i*BATCH_SIZE:(i+1)*BATCH_SIZE], 
+            pos_cc[i*BATCH_SIZE:(i+1)*BATCH_SIZE], 
+            frames[-1].shape[0:2])
+        heatmap_piece = np.sum(heatmaps, axis=0)
+        heatmap_final += heatmap_piece
+    heatmap_final = np.sqrt(heatmap_final)
     norm_hm = ((heatmap_final/(np.max(heatmap_final)))*255).astype(np.uint8)
     color_hm = cv2.applyColorMap(norm_hm, cv2.COLORMAP_JET)
     mixed = cv2.addWeighted(frames[-1],0.5, color_hm,0.5,0.0)
 
-    # cv2.imwrite(str(vid_dir/f'{name}_overlay.png'), frame_map)    
+    cv2.imwrite(str(vid_dir/f'{name}_overlay.png'), frame_map)    
     # cv2.imwrite(str(vid_dir/f'{name}_white.png'), white_map)
     cv2.imwrite(str(vid_dir/f'{name}_heatmap.png'),mixed)
 
