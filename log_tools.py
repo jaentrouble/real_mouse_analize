@@ -1,15 +1,6 @@
 import pickle
 from pathlib import Path
-
-BUT_PRS = 'button_pressed'
-CUR_POS = 'pos(x_y)'
-CUR_ROOM = 'current_room'
-PIN_ON = 'pin_on'
-PIN_OFF = 'pin_off'
-NOR_REW = 'normal_reward'
-FAILED = 'failed'
-TIME_OVR = 'time_over'
-TEST_ST = 'test_start'
+from constants import *
 
 def log_to_dict(log_path):
 
@@ -43,3 +34,13 @@ def line_to_dict(log_line:str):
         'type' : name,
         'data' : data,
     }
+
+def success_rate(logs: list):
+    all_trials = 0
+    success = 0
+    for log in logs:
+        if log['type'] == TEST_ST:
+            all_trials += 1
+        elif log['type'] == NOR_REW:
+            success += 1
+    return all_trials, success
