@@ -1,6 +1,7 @@
 import pickle
 from pathlib import Path
 from constants import *
+import cv2
 
 def log_to_dict(log_path):
 
@@ -44,3 +45,38 @@ def success_rate(logs: list):
         elif log['type'] == NOR_REW:
             success += 1
     return all_trials, success
+
+def test_cutter(vid_path : Path, logs: list):
+    """log_to_vid
+    vid_path : path including video name
+    
+    """
+    cap = cv2.VideoCapture(vid_path)
+    cur_frame = 0
+    record = False
+    vid_writer = None
+    vid_count = 0
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+
+    for log in logs:
+        while cur_frame<=log['frame']:
+            ret, new_frame = cap.read()
+            cur_frame += 1
+            if not ret:
+                break
+            if record:
+                vid_writer.write(new_frame)
+        if not ret:
+            break
+
+        if log['type']==TEST_ST:
+            new_name = vid_path.stem + '_' + str(vid_count) + '.mp4'
+            vid_writer = cv2.VideoWriter(
+                str(vid_path.with_name(new_name)),
+                fourcc,
+                10,
+                (new_frame.shape[1],new_frame.shape[0])
+            )
+        elif log['type'] in [TIME_OVR, FAILED, NOR_REW] :
+            vid_writer.release()
+            vid_count += 1
