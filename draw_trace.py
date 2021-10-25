@@ -4,10 +4,10 @@ from pathlib import Path
 import os
 from tqdm import tqdm, trange
 import numpy as np
-import skimage
-import imageio
+import tflite_runtime.interpreter as tflite
 
-MARKER = np.array([0,255,255])
+
+MODEL_PATH = 'models/mobv3_small_07_head_4cham_0q0_quan.tflite'
 LINE_OVER = [0,255,255]
 LINE_WHITE = [0,0,170]
 LINE_THICK = 1
@@ -22,6 +22,11 @@ vid_names = os.listdir(vid_dir)
 vid_names.sort()
 
 distances = []
+
+interpreter = tflite.Interpreter(MODEL_PATH)
+interpreter.allocate_tensors()
+input_details = interpreter.get_input_details()[0]
+
 
 def gaussian_heatmap_batch(rr, cc, shape, sigma=10):
     """
